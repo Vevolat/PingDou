@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片转拼豆设计图</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="title">图片转拼豆设计图</h1>
+            <p class="subtitle">上传图片，自动生成本地配色方案与网格设计图</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Sidebar: Controls -->
+            <aside class="sidebar">
+                <!-- Upload -->
+                <div class="panel">
+                    <h2 class="panel-title">图片</h2>
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg" hidden>
+                        <div class="upload-placeholder">
+                            <p class="upload-text">点击或拖拽上传</p>
+                        </div>
+                        <img id="previewThumb" class="preview-thumb" alt="缩略预览">
+                    </div>
+                </div>
+
+                <!-- Grid Settings -->
+                <div class="panel">
+                    <h2 class="panel-title">网格</h2>
+                    <div class="controls-list">
+                        <div class="control-item">
+                            <label class="control-label">预设宽度</label>
+                            <select id="gridSize" class="control-select">
+                                <option value="16">16</option>
+                                <option value="24" selected>24</option>
+                                <option value="32">32</option>
+                                <option value="48">48</option>
+                                <option value="64">64</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                        </div>
+                        <div class="control-row" id="customWidthGroup" style="display: none;">
+                            <div class="control-item">
+                                <label class="control-label">宽度</label>
+                                <input type="number" id="customWidth" class="control-input" min="8" max="200" value="30">
+                            </div>
+                            <div class="control-item">
+                                <label class="control-label">高度</label>
+                                <input type="number" id="customHeight" class="control-input" min="8" max="200" value="30">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rendering -->
+                <div class="panel">
+                    <h2 class="panel-title">渲染</h2>
+                    <div class="controls-list">
+                        <div class="control-item">
+                            <label class="control-label">显示色号</label>
+                            <select id="showCode" class="control-select">
+                                <option value="yes" selected>显示</option>
+                                <option value="no">不显示</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <label class="control-label">拼豆形状</label>
+                            <select id="beadShape" class="control-select">
+                                <option value="circle" selected>圆形</option>
+                                <option value="square">方形</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <label class="control-label">网格线</label>
+                            <select id="gridLineStyle" class="control-select">
+                                <option value="none">无</option>
+                                <option value="thin" selected>细线</option>
+                                <option value="thick">粗线</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <label class="control-label">网格线颜色</label>
+                            <select id="gridLineColor" class="control-select">
+                                <option value="black">黑色</option>
+                                <option value="gray">灰色</option>
+                                <option value="white">白色</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Algorithm -->
+                <div class="panel">
+                    <h2 class="panel-title">算法</h2>
+                    <div class="controls-list">
+                        <div class="control-item">
+                            <label class="control-label">颜色简化</label>
+                            <input type="range" id="colorThreshold" class="control-range" min="0" max="50" value="0">
+                            <span class="range-value" id="thresholdValue">0</span>
+                        </div>
+                        <div class="control-item">
+                            <label class="control-label">杂色去除</label>
+                            <input type="range" id="noiseRadius" class="control-range" min="0" max="5" value="0">
+                            <span class="range-value" id="noiseValue">0</span>
+                        </div>
+                        <div class="control-item">
+                            <label class="control-label">背景容差</label>
+                            <select id="bgTolerance" class="control-select">
+                                <option value="0">关闭</option>
+                                <option value="30">低</option>
+                                <option value="60" selected>中</option>
+                                <option value="100">高</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <label class="control-label">最大颜色数</label>
+                            <select id="maxColors" class="control-select">
+                                <option value="0" selected>不限</option>
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="panel panel-actions">
+                    <button id="convertBtn" class="btn btn-primary" disabled>生成</button>
+                    <button id="downloadBtn" class="btn btn-secondary" disabled>下载PNG</button>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="content">
+                <!-- Preview -->
+                <div class="preview-container">
+                    <div class="preview-panel">
+                        <div class="panel-header">
+                            <h3 class="preview-title">原图</h3>
+                            <button class="btn-fullscreen" id="fullscreenOriginal" title="全屏查看">&#x26F6;</button>
+                        </div>
+                        <canvas id="originalCanvas" class="preview-canvas"></canvas>
+                    </div>
+                    <div class="preview-panel">
+                        <div class="panel-header">
+                            <h3 class="preview-title">拼豆图</h3>
+                            <button class="btn-fullscreen" id="fullscreenBead" title="全屏查看">&#x26F6;</button>
+                        </div>
+                        <canvas id="beadCanvas" class="preview-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <span class="stat-label">尺寸</span>
+                        <span class="stat-value" id="gridSizeInfo">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">拼豆数</span>
+                        <span class="stat-value" id="totalBeads">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">颜色数</span>
+                        <span class="stat-value" id="colorCount">0</span>
+                    </div>
+                </div>
+
+                <!-- Color List -->
+                <div class="color-list-wrap">
+                    <h3 class="list-title">配色清单</h3>
+                    <div class="color-list" id="colorList"></div>
+                </div>
+            </main>
+        </div>
+
+        <footer class="footer">
+            <p>纯前端本地处理 | 图片转拼豆设计图</p>
+        </footer>
+    </div>
+
+    <!-- Fullscreen Modal -->
+    <div class="fullscreen-modal" id="fullscreenModal">
+        <div class="fullscreen-toolbar">
+            <span class="fullscreen-title">预览</span>
+            <div class="fullscreen-zoom-controls">
+                <button class="zoom-btn" id="zoomOut">−</button>
+                <span class="zoom-value" id="zoomValue">100%</span>
+                <button class="zoom-btn" id="zoomIn">+</button>
+                <button class="zoom-btn" id="zoomReset" title="重置">⟲</button>
+            </div>
+            <button class="btn-close" id="closeFullscreen">&times;</button>
+        </div>
+        <div class="fullscreen-canvas-wrap">
+            <canvas id="fullscreenCanvas"></canvas>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">正在生成...</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
